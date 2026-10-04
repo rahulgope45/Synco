@@ -2,7 +2,7 @@
 
 Product: synchronize a local audio file across phones on Wi-Fi/hotspot.
 Stack: React Native + TypeScript; Expo development builds; Zustand; Zod; Jest.
-Current stage: Phase 0 in progress; phone-host and guest LAN smoke passed; two-phone acoustic test next.
+Current stage: Phase 0 in progress; two physical phones passed group-click smoke; recorded acoustic timing next.
 
 | Feature | Context | Code |
 |---|---|---|
@@ -18,3 +18,4 @@ Read one feature plus direct dependencies, not this whole folder.
 Resume: [HANDOFF](HANDOFF.md). Delivery gates: [roadmap](../docs/ROADMAP.md).
 Architecture decisions: [decisions](../docs/DECISIONS.md).
 Historical plan: [handover](../docs/reference/synco-handover.md), reference only.
+
