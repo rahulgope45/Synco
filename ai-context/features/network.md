@@ -9,6 +9,7 @@ Android phone-host WebSocket and LAN guest path implemented.
 apps/mobile/modules/synco-host; apps/mobile/src/services/network/phone-host.ts; websocket-transport.ts
 
 ## Decisions
+Experimental AUDIO_PCM frames: 20 ms / mono 48 kHz PCM16, base64 within 4 KiB. Synchronous native fan-out to TS-admitted ready guests; drop live frames on busy sockets. AUDIO_STOP ends receiver output.
 Native server binds selected local IPv4; max 8 connections, 4 KiB controls, 30 messages/sec/connection. TS validates all messages; pending admission expires in 5 s.
 
 ## Evidence
@@ -22,4 +23,3 @@ No compressed chunks, backpressure for streaming, auto-reconnect, or iOS host ye
 
 ## Next action
 Measure recorded audible alignment on the two connected phones; then implement streaming framing.
-

@@ -17,6 +17,11 @@ export const messageSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...base, type: z.literal('PLAY_AT'), hostTime: time, positionMs: time }),
   z.strictObject({ ...base, type: z.literal('PAUSE'), hostTime: time }),
   z.strictObject({ ...base, type: z.literal('BYE') }),
+  // Experimental live mode: 20 ms of 48 kHz mono signed PCM16 little-endian.
+  // Exactly 1920 bytes => 2560 base64 characters. No clock alignment claim.
+  z.strictObject({ ...base, type: z.literal('AUDIO_PCM'), seq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    pcm: z.string().length(2560).regex(/^[A-Za-z0-9+/]+$/) }),
+  z.strictObject({ ...base, type: z.literal('AUDIO_STOP') }),
 ]);
 // Phase-0 subset only. CHUNK / STATE await the streaming framing decision.
 export type Message = z.infer<typeof messageSchema>;

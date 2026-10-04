@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSpikeStore } from '../state/spike-store';
+import { useCaptureStore } from '../state/capture-store';
 
 export function StatusScreen() {
   const state = useSpikeStore();
+  const capture = useCaptureStore();
   const [code, setCode] = useState('');
   useEffect(() => {
+    const timer = setInterval(() => useCaptureStore.getState().refresh(), 1000);
     const subscription = AppState.addEventListener('change', next => {
-      if (next !== 'active') void useSpikeStore.getState().disconnect();
+      if (next !== 'active') {
+        useCaptureStore.getState().refresh();
+        if (!useCaptureStore.getState().running || useSpikeStore.getState().role !== 'host') void useSpikeStore.getState().disconnect();
+      }
     });
-    return () => { subscription.remove(); void useSpikeStore.getState().disconnect(); };
+    return () => { clearInterval(timer); subscription.remove(); void useSpikeStore.getState().disconnect(); };
   }, []);
   const status = state.connected ? (state.ready ? 'Clock ready' : 'Measuring clock') : 'Disconnected';
   return (
@@ -24,11 +30,14 @@ export function StatusScreen() {
           <Text style={styles.body}>{state.guests} joined / {state.readyGuests} clock-ready</Text>
           <Text style={styles.note}>Share this code only with friends on the same Wi-Fi or hotspot. Long-press to copy.</Text>
           <Text selectable testID="join-code" style={styles.code}>{state.joinCode}</Text>
-          <Action label="Play together in 3 seconds" disabled={state.busy || state.readyGuests === 0} onPress={() => { void state.groupClick(); }} />
+          <Action label="Share music app audio" disabled={state.busy || capture.running || state.readyGuests === 0} onPress={() => { void state.shareMusic(); }} />
+          {capture.running && <Action label="Stop music sharing" onPress={capture.stop} />}
+          <Text style={styles.note}>{capture.running ? capture.message : 'Join another phone, then share and open ReVanced Music. Live playback is experimental and delayed.'}</Text>
+          <Action label="Play together in 3 seconds" disabled={state.busy || capture.running || state.readyGuests === 0} onPress={() => { void state.groupClick(); }} />
           <Action label="End phone session" onPress={() => { void state.disconnect(); }} />
         </> : state.role === 'guest' ? <>
           <Text style={styles.status}>{status}</Text>
-          <Text style={styles.body}>The host controls the shared click test.</Text>
+          <Text style={styles.body}>The host controls clicks or live music. Keep this screen open to listen.</Text>
           <Action label="Leave phone session" onPress={() => { void state.disconnect(); }} />
         </> : <>
           <Action label="Find Wi-Fi addresses" disabled={state.busy} onPress={state.loadAddresses} />
@@ -51,8 +60,16 @@ export function StatusScreen() {
         <Text style={styles.note}>Offset is the difference between clock origins, not audio delay. Audible alignment still needs a recording.</Text>
         {state.role !== 'host' && state.role !== 'guest' && <Action label={state.connected ? 'Disconnect test host' : 'Connect computer test host'} disabled={state.busy} onPress={() => { void (state.connected ? state.disconnect() : state.connect()); }} />}
       </View>
+      {state.role === 'none' && <View style={styles.card}>
+        <Text style={styles.label}>MUSIC APP CAPTURE TEST</Text>
+        <Text style={styles.body}>{capture.message}</Text>
+        <Text style={styles.note}>Approve capture, then open ReVanced Music and play a song. This 30-second check saves no audio and does not transmit it yet.</Text>
+        <Text style={styles.note}>Audio peak: {capture.peak} / Samples: {capture.samples}</Text>
+        <Action label="Test music app capture" disabled={capture.running} onPress={() => { void capture.start(); }} />
+        {capture.running && <Action label="Stop capture test" onPress={capture.stop} />}
+      </View>}
       {state.error && <Text accessibilityRole="alert" style={styles.error}>{state.error}</Text>}
-      <Text style={styles.note}>Keep the app open. Backgrounding stops this experiment. Audible alignment is unmeasured; a low RTT does not prove synchronized sound.</Text>
+      <Text style={styles.note}>Listeners must keep Synco open. Music sharing continues while the host opens the music app; stop it in Synco or its notification. Live audio is delayed and not synchronized.</Text>
     </ScrollView>
   );
 }

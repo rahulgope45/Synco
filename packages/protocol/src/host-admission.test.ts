@@ -23,6 +23,8 @@ test('guests cannot control host playback or join twice', () => {
   const host = new HostAdmission(token, 'test', () => 123);
   host.receive('a', hello);
   expect(host.receive('a', { type: 'PLAY_AT', v: 1, hostTime: 1000, positionMs: 0 })).toBe('close');
+  expect(host.receive('a', { type: 'AUDIO_PCM', v: 1, seq: 0, pcm: 'A'.repeat(2560) })).toBe('close');
+  expect(host.receive('a', { type: 'AUDIO_STOP', v: 1 })).toBe('close');
   expect(host.receive('a', hello)).toBe('close');
 });
 test('join codes round-trip; public endpoints and incompatible versions fail', () => {

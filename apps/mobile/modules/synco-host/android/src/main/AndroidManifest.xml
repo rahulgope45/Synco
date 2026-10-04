@@ -1,3 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+  <queries><package android:name="app.revanced.android.apps.youtube.music" /></queries>
+  <application>
+    <activity android:name=".CaptureConsentActivity" android:exported="false" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    <service android:name=".CaptureProbeService" android:exported="false" android:foregroundServiceType="mediaProjection" />
+  </application>
 </manifest>

@@ -9,6 +9,7 @@ Host and guest group-start path integrated with native click scheduling.
 apps/mobile/src/services/sync/spike-session.ts; packages/sync-core/src/probe-tracker.ts
 
 ## Decisions
+Live app-audio mode is deliberately unscheduled: source output timing is controlled by the other app. Clock-ready is an admission gate only. Continuous music confirmed by user, but delayed. See docs/LIVE-MUSIC.md.
 Three fresh matched probes enable readiness. Only the host issues PLAY_AT, 3 s ahead. Low RTT/clock readiness is not an audible-alignment claim.
 
 ## Evidence
@@ -22,4 +23,3 @@ No two-phone acoustic result yet; no sustained drift correction or calibration p
 
 ## Next action
 Run repeated physical two-phone starts and record waveform alignment.
-

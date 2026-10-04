@@ -3,7 +3,7 @@
 Updated: 2026-10-04
 
 ## Status
-Phase-0 native click engine implemented with react-native-audio-api 0.13.6.
+Scheduled clicks use react-native-audio-api 0.13.6. Experimental UID-filtered Android playback capture and native AudioTrack live receiver added; see docs/LIVE-MUSIC.md.
 
 ## Code paths
 apps/mobile/src/services/audio/click-engine.ts; docs/DEVICE-TEST.md
@@ -12,6 +12,7 @@ apps/mobile/src/services/audio/click-engine.ts; docs/DEVICE-TEST.md
 Generate eight identical quiet clicks; schedule against AudioContext.currentTime. Map performance.now using a bracketed native clock read. Reject starts with less than 100 ms lead.
 
 ## Evidence
+ReVanced Music 8.10.52 capture passed on RMX3085: peak 29670, 2,880,000 stereo samples in 30 seconds. User confirmed continuous but delayed live music on V2146 after sender queue fixes; zero missing frames over an observed 80-second interval; stop propagated. docs/validation/live-music-2026-10-04.md.
 Two physical Android phones passed join/readiness/group-click smoke; user heard both as one beat. See docs/validation/two-phones-2026-10-04.md. Acoustic timing remains unmeasured.
 Typecheck, lint and 15 Jest tests passed. Simulator probe/malformed-message smoke passed.
 Native build/install/launch passed on RMX3085 Android 13.
@@ -23,4 +24,3 @@ Acoustic latency and cross-device alignment unmeasured. Native build/device smok
 
 ## Next action
 Record repeated starts on the tested pair and measure acoustic error.
-

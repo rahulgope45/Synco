@@ -19,3 +19,7 @@
 - Plain LAN WebSocket is unencrypted. A join token restricts admission but provides no confidentiality. Do not log tokens; bind to the intended LAN and cap connections/message sizes when implementing transport.
 
 Sources: [Expo native customization](https://docs.expo.dev/workflow/customizing/), [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Codex skills](https://learn.chatgpt.com/docs/build-skills).
+
+## Experimental app audio (2026-10-04)
+
+User requested sharing another music app's output and selected the installed ReVanced Music package for testing. Add a separate live capture mode alongside scheduled clicks. Android playback capture is UID-scoped and user-consented; host capture uses a foreground service. Keep wire schemas/admission in shared TypeScript, native code owns AudioRecord/AudioTrack and bounded socket transport. First framing uses mono 48 kHz PCM16 in 20 ms base64 messages; optimize only against observed device evidence. This mode does not promise source/receiver alignment. See LIVE-MUSIC.md.

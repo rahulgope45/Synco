@@ -4,6 +4,7 @@ import { SpikeSession, type SpikeSnapshot } from '../services/sync/spike-session
 type SpikeState = SpikeSnapshot & {
   busy: boolean; localClick: () => Promise<void>; connect: () => Promise<void>;
   disconnect: () => Promise<void>; stopAudio: () => void;
+  shareMusic: () => Promise<void>;
   addresses: string[]; loadAddresses: () => void; host: (ip: string) => Promise<void>; join: (code: string) => Promise<void>; groupClick: () => Promise<void>;
 };
 let session: SpikeSession | undefined;
@@ -53,6 +54,7 @@ export const useSpikeStore = create<SpikeState>((set, get) => {
       await get().disconnect(); await run(current => current.connect(code));
     },
     groupClick: () => run(current => current.groupClick()),
+    shareMusic: () => run(async current => { current.startMusicSharing(); }),
     localClick: () => run(current => current.localClick()),
     connect: async () => {
       if (get().busy || get().connected) return;

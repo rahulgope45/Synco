@@ -42,6 +42,9 @@ export class PhoneHost {
     const sent = await Promise.allSettled(ready.map(id => this.module.send(id, JSON.stringify(message))));
     if (sent.every(result => result.status === 'rejected')) throw new Error('No guest received the command');
   }
+  broadcastLive(message: Extract<Message, { type: 'AUDIO_PCM' }>): void {
+    this.module.sendLive(this.admission?.readyIds() ?? [], JSON.stringify(message));
+  }
   async stop(): Promise<void> {
     this.subscriptions.forEach(subscription => subscription.remove()); this.subscriptions = [];
     this.pending.forEach(timer => clearTimeout(timer)); this.pending.clear(); this.admission = undefined;

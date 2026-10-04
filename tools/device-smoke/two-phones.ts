@@ -17,6 +17,14 @@ function tap(serial: string, xml: string, label: string): void {
   assert.ok(Number(bounds[3]) > Number(bounds[1]), `Control must be on screen: ${label}`);
   adb(serial, 'shell', 'input', 'tap', String(Math.round((Number(bounds[1]) + Number(bounds[3])) / 2)), String(Math.round((Number(bounds[2]) + Number(bounds[4])) / 2)));
 }
+function completion(serial: string): string {
+  let xml = dump(serial);
+  for (let attempt = 0; attempt < 3 && !xml.includes('Finished 8 clicks'); attempt++) {
+    adb(serial, 'shell', 'input', 'swipe', '540', '1800', '540', '800', '300');
+    xml = dump(serial);
+  }
+  return xml;
+}
 try {
   let hostUi = dump(host);
   if (!hostUi.includes('Hosting on this phone')) {
@@ -46,15 +54,17 @@ try {
   }
   assert.ok(hostUi.includes('1 joined / 1 clock-ready') && guestUi.includes('Clock ready'), 'Physical guest must become clock-ready');
   console.log('PASS: physical phone guest joined the phone host over LAN and became clock-ready');
-  tap(host, hostUi, 'Play together in 3 seconds');
-  await delay(11000);
-  for (let attempt = 0; attempt < 5; attempt++) {
-    hostUi = dump(host); guestUi = dump(guest);
-    if (hostUi.includes('Finished 8 clicks') && guestUi.includes('Finished 8 clicks')) break;
-    await delay(2000);
+  if (!process.argv.includes('--join-only')) {
+    tap(host, hostUi, 'Play together in 3 seconds');
+    await delay(11000);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      hostUi = completion(host); guestUi = completion(guest);
+      if (hostUi.includes('Finished 8 clicks') && guestUi.includes('Finished 8 clicks')) break;
+      await delay(2000);
+    }
+    assert.ok(hostUi.includes('Finished 8 clicks') && guestUi.includes('Finished 8 clicks'), 'Both phones must finish scheduled playback');
+    console.log('PASS: both physical phones report finishing the shared eight-click start. Acoustic alignment remains unmeasured.');
   }
-  assert.ok(hostUi.includes('Finished 8 clicks') && guestUi.includes('Finished 8 clicks'), 'Both phones must finish scheduled playback');
-  console.log('PASS: both physical phones report finishing the shared eight-click start. Acoustic alignment remains unmeasured.');
   console.log('Session left open for listening and recording repeats.');
 } finally {
   for (const serial of [host, guest]) adb(serial, 'shell', 'rm', '-f', '/sdcard/synco-window.xml');

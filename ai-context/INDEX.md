@@ -1,6 +1,6 @@
 # Synco context map
 
-Product: synchronize a local audio file across phones on Wi-Fi/hotspot.
+Product: share audio across phones on Wi-Fi/hotspot. Current user priority: installed music-app output sharing; local files remain the fully controllable sync path.
 Stack: React Native + TypeScript; Expo development builds; Zustand; Zod; Jest.
 Current stage: Phase 0 in progress; two physical phones passed group-click smoke; recorded acoustic timing next.
 
@@ -18,4 +18,3 @@ Read one feature plus direct dependencies, not this whole folder.
 Resume: [HANDOFF](HANDOFF.md). Delivery gates: [roadmap](../docs/ROADMAP.md).
 Architecture decisions: [decisions](../docs/DECISIONS.md).
 Historical plan: [handover](../docs/reference/synco-handover.md), reference only.
-

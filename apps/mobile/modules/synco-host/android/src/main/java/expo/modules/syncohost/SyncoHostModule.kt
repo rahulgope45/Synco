@@ -3,6 +3,7 @@ package expo.modules.syncohost
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import org.java_websocket.WebSocket
+import org.java_websocket.WebSocketImpl
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.handshake.ClientHandshake
 import org.java_websocket.server.WebSocketServer
@@ -36,14 +37,28 @@ class SyncoHostModule : Module() {
     AsyncFunction("send") { id: String, text: String ->
       require(text.toByteArray(Charsets.UTF_8).size <= 4096) { "Control message too large" }
       val client = clients[id] ?: error("Guest disconnected")
-      if (client.hasBufferedData()) { client.close(1008, "Slow guest"); error("Guest is not keeping up") }
+      if (pendingBytes(client) > 65536) { client.close(1008, "Slow guest"); error("Guest is not keeping up") }
       client.send(text)
     }
     AsyncFunction("closeClient") { id: String -> clients[id]?.close(1008, "Session rejected or ended") }
+    // IDs are selected by the TS admission policy. A slow listener drops a frame;
+    // it must not disconnect all live listeners or grow an unbounded send queue.
+    Function("sendLive") { readyIds: List<String>, text: String ->
+      require(text.toByteArray(Charsets.UTF_8).size <= 4096)
+      readyIds.forEach { id ->
+        val client = clients[id]
+        if (client != null && client.isOpen && pendingBytes(client) < 16384) {
+          try { client.send(text) } catch (_: Exception) { client.close() }
+        }
+      }
+    }
     AsyncFunction("stop") { stopHost() }
-    OnActivityEntersBackground { stopHost() }
+    OnActivityEntersBackground { if (CaptureProbeService.status["running"] != true) stopHost() }
     OnDestroy { stopHost() }
   }
+
+  private fun pendingBytes(client: WebSocket): Int =
+    (client as? WebSocketImpl)?.outQueue?.sumOf { it.remaining() } ?: 65537
 
   private fun localAddresses(): List<String> = NetworkInterface.getNetworkInterfaces().toList()
     .filter { it.isUp && !it.isLoopback }
