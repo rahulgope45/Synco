@@ -1,0 +1,33 @@
+{
+  "name": "synco",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "npm run start -w @synco/mobile --",
+    "android": "npm run android -w @synco/mobile --",
+    "ios": "npm run ios -w @synco/mobile --",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json && npm run typecheck -w @synco/mobile",
+    "test": "jest --runInBand",
+    "lint": "eslint apps/mobile packages tools",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "skills:install": "node scripts/install-skills.mjs",
+    "sim-host": "node --experimental-strip-types tools/sim-host/index.ts"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/ws": "^8.18.2",
+    "eslint": "^9.0.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.0.0",
+    "ws": "^8.22.0"
+  }
+}
