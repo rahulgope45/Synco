@@ -16,3 +16,4 @@ Two-phone click smoke passed; user heard both as one beat. No acoustic alignment
 Existing dependency advisories remain documented; no forced downgrade applied.
 
 Two-phone evidence: docs/validation/two-phones-2026-10-04.md; reusable tools/device-smoke/two-phones.ts.
+Standalone ARM64 test APK built and launched on V2146 without Metro forwarding: dist/synco-0.1.0-arm64-test.apk. See docs/APK.md for build recipe, hash and signing scope. V2146 now has the standalone build; RMX3085 remains on the development build.
