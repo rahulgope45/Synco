@@ -3,22 +3,21 @@
 Updated: 2026-10-04
 
 ## Status
-Interactive Phase-0 screen and session cleanup implemented.
+Foreground phone-session lifecycle implemented and smoke-tested.
 
 ## Code paths
-apps/mobile/src/ui/StatusScreen.tsx; apps/mobile/src/state/spike-store.ts
+apps/mobile/src/state/spike-store.ts; services/sync/spike-session.ts; modules/synco-host
 
 ## Decisions
-Show unknown metrics until fresh probes exist; show errors; disconnect and close audio when app backgrounds.
+Generation guards discard stale callbacks; local state resets on close. Native host also stops on Android activity background.
 
 ## Evidence
-Typecheck, lint and 15 Jest tests passed. Simulator probe/malformed-message smoke passed.
-Native build/install/launch passed on RMX3085 Android 13.
-User confirmed local clicks audible; computer-host PLAY_AT completed; background cleanup passed.
-Evidence: docs/validation/device-smoke-2026-10-04.md.
+Native Android build/install passed; 19 automated tests passed.
+Live phone-host (2 simulated guests) and phone-guest LAN smoke tests passed.
+See docs/validation/phone-network-2026-10-04.md.
 
 ## Open risks
-Foreground/background playback and recovery are later-phase work. Current experiment intentionally stops on background.
+No background playback or automatic reconnect yet; hotspot isolation and connection-pressure tests pending.
 
 ## Next action
-Add the phone-host path, then run physical disconnect/rejoin tests.
+After acoustic gate, harden reconnect/streaming and background lifecycle.

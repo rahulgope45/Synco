@@ -3,22 +3,21 @@
 Updated: 2026-10-04
 
 ## Status
-Probe correlation, duplicate/late rejection, freshness gate and remote PLAY_AT integration implemented.
+Host and guest group-start path integrated with native click scheduling.
 
 ## Code paths
-packages/sync-core/src/probe-tracker.ts; apps/mobile/src/services/sync/spike-session.ts
+apps/mobile/src/services/sync/spike-session.ts; packages/sync-core/src/probe-tracker.ts
 
 ## Decisions
-Minimum RTT of eight samples; require three matched replies; expire after 15 s without replies; reset on disconnect; native scheduling rejects late starts.
+Three fresh matched probes enable readiness. Only the host issues PLAY_AT, 3 s ahead. Low RTT/clock readiness is not an audible-alignment claim.
 
 ## Evidence
-Typecheck, lint and 15 Jest tests passed. Simulator probe/malformed-message smoke passed.
-Native build/install/launch passed on RMX3085 Android 13.
-User confirmed local clicks audible; computer-host PLAY_AT completed; background cleanup passed.
-Evidence: docs/validation/device-smoke-2026-10-04.md.
+Native Android build/install passed; 19 automated tests passed.
+Live phone-host (2 simulated guests) and phone-guest LAN smoke tests passed.
+See docs/validation/phone-network-2026-10-04.md.
 
 ## Open risks
-Clock mapping and output latency require acoustic measurement. No drift correction or user-delay persistence yet.
+No two-phone acoustic result yet; no sustained drift correction or calibration persistence.
 
 ## Next action
-Add phone-host transport and measure two-phone acoustic alignment.
+Run repeated physical two-phone starts and record waveform alignment.

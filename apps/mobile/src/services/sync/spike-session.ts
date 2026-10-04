@@ -1,3 +1,6 @@
+import { decodeJoinCode } from '@synco/protocol';
+import { PhoneHost } from '../network/phone-host';
+import { getHostModule } from '../../../modules/synco-host';
 import { guestPlayTime } from '@synco/sync-core';
 import { ProbeTracker } from '@synco/sync-core/src/probe-tracker';
 import { WebSocketTransport } from '../network/websocket-transport';
@@ -6,6 +9,7 @@ import { ClickEngine } from '../audio/click-engine';
 export type SpikeSnapshot = {
   connected: boolean; ready: boolean; rttMs: number | null; offsetMs: number | null;
   audio: string; error: string | null;
+  role: 'none' | 'host' | 'guest' | 'simulator'; joinCode: string | null; guests: number; readyGuests: number;
 };
 export class SpikeSession {
   private audio = new ClickEngine();
@@ -15,6 +19,37 @@ export class SpikeSession {
   private active = true;
   private sent = 0;
   private audioGeneration = 0;
+  private host?: PhoneHost;
+  private phoneGuest = false;
+  private wasReady = false;
+  static addresses(): string[] { return getHostModule().addresses(); }
+  async hostSession(ip: string): Promise<void> {
+    await this.audio.prepare();
+    if (!this.active) return;
+    const host = new PhoneHost(
+      (guests, readyGuests) => this.update({ guests, readyGuests }),
+      reason => { this.update({ role: 'none', joinCode: null, guests: 0, readyGuests: 0, error: reason, audio: 'Stopped' }); },
+    );
+    this.host = host;
+    const joinCode = await host.start(ip);
+    if (!this.active) { await host.stop(); return; }
+    this.update({ role: 'host', joinCode, error: null });
+  }
+  async groupClick(): Promise<void> {
+    if (!this.host) throw new Error('Create a phone session first');
+    const hostTime = performance.now() + 3000;
+    await this.host.broadcast({ type: 'PLAY_AT', v: 1, hostTime, positionMs: 0 });
+    if (this.active) this.schedule(hostTime);
+  }
+  private publishClock(now: number): void {
+    const estimate = this.clock.get(now);
+    const ready = !!estimate;
+    this.update({ ready, rttMs: estimate?.rttMs ?? null, offsetMs: estimate?.offsetMs ?? null });
+    if (this.phoneGuest && ready !== this.wasReady) {
+      this.wasReady = ready;
+      void this.transport.send({ type: 'READY', v: 1, ready }).catch(() => this.update({ error: 'Could not update host readiness' }));
+    }
+  }
   constructor(private update: (patch: Partial<SpikeSnapshot>) => void) {}
   async localClick(): Promise<void> {
     const generation = ++this.audioGeneration;
@@ -26,19 +61,34 @@ export class SpikeSession {
     const result = this.audio.schedule(localTime, () => this.update({ audio: 'Finished 8 clicks' }));
     this.update({ audio: `Scheduled 8 clicks; lead ${Math.round(result.leadMs)} ms`, error: null });
   }
-  async connect(): Promise<void> {
+  async connect(joinCode?: string): Promise<void> {
+    const payload = joinCode ? decodeJoinCode(joinCode) : undefined;
+    this.phoneGuest = !!payload;
+    let welcomeResolve: (() => void) | undefined;
+    let welcomeReject: ((error: Error) => void) | undefined;
+    let admitted = !payload;
+    let welcomeTimer: ReturnType<typeof setTimeout> | undefined;
+    const welcome = payload ? new Promise<void>((resolve, reject) => { welcomeResolve = resolve; welcomeReject = reject; }) : Promise.resolve();
+    // Observe rejection immediately; the await occurs after socket startup.
+    void welcome.catch(() => {});
     await this.audio.prepare();
     if (!this.active) return;
     this.transport.onDisconnect(reason => {
-      clearTimeout(this.timer); this.clock.reset(); this.audio.stop();
-      this.update({ connected: false, ready: false, rttMs: null, offsetMs: null, audio: 'Stopped', error: reason });
+      clearTimeout(this.timer); clearTimeout(welcomeTimer); welcomeReject?.(new Error(reason)); this.clock.reset(); this.audio.stop();
+      this.update({ connected: false, ready: false, rttMs: null, offsetMs: null, audio: 'Stopped', error: reason, role: 'none' });
     });
     this.transport.onMessage(message => {
       const now = performance.now();
+      if (message.type === 'WELCOME' && payload && !admitted) {
+        if (message.trackMeta.title !== 'Synco click track' || message.trackMeta.durationMs !== 8000) {
+          welcomeReject?.(new Error('Host is using a different test track')); return;
+        }
+        admitted = true; clearTimeout(welcomeTimer); welcomeResolve?.(); return;
+      }
+      if (!admitted) { welcomeReject?.(new Error('Host did not accept this join code')); return; }
       if (message.type === 'PONG') {
         this.clock.receive({ ...message, t3: now });
-        const estimate = this.clock.get(now);
-        this.update({ ready: !!estimate, rttMs: estimate?.rttMs ?? null, offsetMs: estimate?.offsetMs ?? null });
+        this.publishClock(now);
       } else if (message.type === 'PLAY_AT') {
         const estimate = this.clock.get(now);
         if (!estimate || message.positionMs !== 0) {
@@ -46,19 +96,25 @@ export class SpikeSession {
         }
         try { this.schedule(guestPlayTime(message.hostTime, estimate.offsetMs)); }
         catch (error) { this.update({ error: error instanceof Error ? error.message : 'Scheduling failed' }); }
-      } else if (message.type === 'BYE') { void this.dispose(); this.update({ connected: false, ready: false, audio: 'Stopped' }); }
+      } else if (message.type === 'BYE') { this.update({ connected: false, ready: false, audio: 'Stopped', role: 'none' }); }
     });
-    await this.transport.connect('ws://127.0.0.1:8787');
+    await this.transport.connect(payload ? `ws://${payload.ip}:${payload.port}` : 'ws://127.0.0.1:8787');
+    if (payload) {
+      welcomeTimer = setTimeout(() => welcomeReject?.(new Error('Host admission timed out')), 5000);
+      try {
+        await this.transport.send({ type: 'HELLO', v: 1, token: payload.token, deviceName: 'Synco guest' });
+        await welcome;
+      } finally { clearTimeout(welcomeTimer); }
+    }
     if (!this.active) { await this.transport.close(); return; }
-    this.update({ connected: true, error: null });
+    this.update({ connected: true, error: null, role: payload ? 'guest' : 'simulator' });
     this.probe();
   }
   private probe(): void {
     if (!this.active) return;
     const t0 = performance.now();
     this.clock.sent(t0);
-    const estimate = this.clock.get(t0);
-    this.update({ ready: !!estimate, rttMs: estimate?.rttMs ?? null, offsetMs: estimate?.offsetMs ?? null });
+    this.publishClock(t0);
     void this.transport.send({ type: 'PING', v: 1, t0 }).catch(error => this.update({ error: String(error) }));
     this.sent++;
     this.timer = setTimeout(() => this.probe(), this.sent < 10 ? 200 : 5000);
@@ -66,6 +122,6 @@ export class SpikeSession {
   stopAudio(): void { this.audioGeneration++; this.audio.stop(); this.update({ audio: 'Stopped' }); }
   async dispose(): Promise<void> {
     this.active = false; this.audioGeneration++; clearTimeout(this.timer); this.clock.reset();
-    await this.transport.close(); await this.audio.dispose();
+    await this.transport.close(); await this.host?.stop(); this.host = undefined; await this.audio.dispose();
   }
 }

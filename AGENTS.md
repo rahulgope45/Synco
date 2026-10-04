@@ -12,6 +12,7 @@ Use `ai-context/HANDOFF.md` to resume work. Code and test results outrank stale 
 - Keep each feature context under about 80 lines: status, paths, decisions, evidence, risks, next action. Replace stale notes; do not append transcripts.
 - After a meaningful change, update the affected feature and compact handoff. Record checks actually run and checks still pending.
 - Run `npm run check` for code changes. Report hardware/native validation separately.
+- Commit coherent working checkpoints after relevant checks; include context updates. The user requested ongoing local commits for tracking. Do not push unless requested.
 - Do not implement v2 features without a user request. No speculative cloud services or accounts.
 
 Project skill sources are in `skills/`: caveman, brainstorm, feature-context, sync-spike.

@@ -2,7 +2,7 @@
 
 Product: synchronize a local audio file across phones on Wi-Fi/hotspot.
 Stack: React Native + TypeScript; Expo development builds; Zustand; Zod; Jest.
-Current stage: Phase 0 in progress; first Android device smoke passed.
+Current stage: Phase 0 in progress; phone-host and guest LAN smoke passed; two-phone acoustic test next.
 
 | Feature | Context | Code |
 |---|---|---|

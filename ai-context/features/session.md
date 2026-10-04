@@ -3,19 +3,21 @@
 Updated: 2026-10-04
 
 ## Status
-Contracts only; no live session.
+Phone hosting, random-token admission, manual join codes and leave/end implemented.
 
 ## Code paths
-apps/mobile/src/services/session/contracts.ts; packages/protocol/src/index.ts
+packages/protocol/src/host-admission.ts; apps/mobile/src/services/network/phone-host.ts; state/spike-store.ts
 
 ## Decisions
-QR carries IPv4, port, token and protocolVersion; validate before connecting.
+Fresh native SecureRandom 128-bit token per session. HELLO/WELCOME gates access; READY reports guest clock readiness. UI shows joined/ready counts.
 
 ## Evidence
-No physical-device verification yet. See foundation.md for automated validation.
+Native Android build/install passed; 19 automated tests passed.
+Live phone-host (2 simulated guests) and phone-guest LAN smoke tests passed.
+See docs/validation/phone-network-2026-10-04.md.
 
 ## Open risks
-Secure random token generation, admission, camera scan and join lifecycle remain unimplemented.
+QR camera/generation still pending; manually share code in Phase 0. Backgrounding ends sessions.
 
 ## Next action
-Choose native host transport, then implement token generation and HELLO/WELCOME.
+Run two-phone join/start test; add QR with streaming phase.

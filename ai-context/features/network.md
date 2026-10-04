@@ -3,22 +3,21 @@
 Updated: 2026-10-04
 
 ## Status
-WebSocket guest transport and computer simulator implemented.
+Android phone-host WebSocket and LAN guest path implemented.
 
 ## Code paths
-apps/mobile/src/services/network/websocket-transport.ts; tools/sim-host/index.ts
+apps/mobile/modules/synco-host; apps/mobile/src/services/network/phone-host.ts; websocket-transport.ts
 
 ## Decisions
-Simulator binds loopback only, accessed via adb reverse. Validate messages, cap payload, timeout connections. UI calls state/actions.
+Native server binds selected local IPv4; max 8 connections, 4 KiB controls, 30 messages/sec/connection. TS validates all messages; pending admission expires in 5 s.
 
 ## Evidence
-Typecheck, lint and 15 Jest tests passed. Simulator probe/malformed-message smoke passed.
-Native build/install/launch passed on RMX3085 Android 13.
-User confirmed local clicks audible; computer-host PLAY_AT completed; background cleanup passed.
-Evidence: docs/validation/device-smoke-2026-10-04.md.
+Native Android build/install passed; 19 automated tests passed.
+Live phone-host (2 simulated guests) and phone-guest LAN smoke tests passed.
+See docs/validation/phone-network-2026-10-04.md.
 
 ## Open risks
-Phone-host LAN server, admission, QR and streaming remain unimplemented. ADB transport results do not characterize hotspot latency.
+No compressed chunks, backpressure for streaming, auto-reconnect, or iOS host yet. Plain WS is unencrypted.
 
 ## Next action
-Implement phone-host transport and token admission; measure on a real hotspot.
+Connect a second Android phone and measure audible alignment; then implement streaming framing.

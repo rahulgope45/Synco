@@ -18,7 +18,7 @@ adb -s DEVICE_SERIAL reverse tcp:8787 tcp:8787
 For local native compilation: `npm run android -- --device RMX3085`.
 Expo selects this wireless device by model name, while adb uses its IP:port serial.
 The native project is generated; customize it through app config/plugins.
-The audio package's Windows build requires Git Bash.
+The audio package's Windows build requires Git Bash. Prepend C:\Program Files\Git\bin and C:\Program Files\Git\usr\bin to PATH for the build shell.
 
 Open the Synco development app, using the Metro development server at http://127.0.0.1:8081.
 Expo Go does not contain the custom audio module.
@@ -35,4 +35,4 @@ Keep the app foregrounded. Backgrounding closes audio/network for this spike.
 Clock ready means at least three recent matched replies, not acoustic synchronization.
 RTT and offset are for the computer-to-device ADB path. No audible error is measured automatically.
 
-Next: phone-host transport, two-device acoustic measurements, then streaming/file selection.
+Phone-host transport is now implemented; see PHONE-SESSIONS.md. Next: two-device acoustic measurements, then streaming/file selection.

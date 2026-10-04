@@ -21,4 +21,4 @@ Evidence: docs/validation/device-smoke-2026-10-04.md.
 Acoustic latency and cross-device alignment unmeasured. Native build/device smoke passed. File decoding/streaming adapter is still unimplemented.
 
 ## Next action
-Implement phone-host transport; then compare two phones on hotspot.
+Use the implemented phone-host path to compare two phones on hotspot.
