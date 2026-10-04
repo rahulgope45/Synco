@@ -20,6 +20,6 @@ Native AudioTrack consumes a queue capped at 15 frames, with an initial five-fra
 
 Live mode is **not synchronized**: the source app controls its own playback and cannot be delayed by this capture API. Different receivers can have different latency. Click-test clock readiness is only an admission prerequisite here; it does not schedule live PCM. No drift correction, stereo, reconnect, background listener, or iOS support yet.
 
-An app can deny capture at runtime even if its manifest allows it. A passing test covers only the tested app/version/content/device. Local file playback remains the path for controlling source timing on every phone.
+An app can deny capture at runtime even if its manifest allows it. A passing test covers only the tested app/version/content/device. The accepted next step is native binary audio delivery; adding a local-file player is outside the user's chosen scope. See NATIVE-AUDIO-PLAN.md.
 
 Reference: https://developer.android.com/media/platform/av-capture

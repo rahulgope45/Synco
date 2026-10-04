@@ -1,8 +1,8 @@
 # Synco context map
 
-Product: share audio across phones on Wi-Fi/hotspot. Current user priority: installed music-app output sharing; local files remain the fully controllable sync path.
+Product: share an existing music app's audio across phones on Wi-Fi/hotspot. Connection/streaming only; no player, library or source-app playback controls.
 Stack: React Native + TypeScript; Expo development builds; Zustand; Zod; Jest.
-Current stage: Phase 0 in progress; two physical phones passed group-click smoke; recorded acoustic timing next.
+Current stage: continuous but delayed live prototype works. Native binary audio migration selected; phased plan written, implementation pending.
 
 | Feature | Context | Code |
 |---|---|---|
@@ -18,3 +18,5 @@ Read one feature plus direct dependencies, not this whole folder.
 Resume: [HANDOFF](HANDOFF.md). Delivery gates: [roadmap](../docs/ROADMAP.md).
 Architecture decisions: [decisions](../docs/DECISIONS.md).
 Historical plan: [handover](../docs/reference/synco-handover.md), reference only.
+
+Accepted migration: [native audio plan](../docs/NATIVE-AUDIO-PLAN.md). Start with baseline telemetry and shared binary contract.

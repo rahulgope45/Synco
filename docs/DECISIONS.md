@@ -23,3 +23,7 @@ Sources: [Expo native customization](https://docs.expo.dev/workflow/customizing/
 ## Experimental app audio (2026-10-04)
 
 User requested sharing another music app's output and selected the installed ReVanced Music package for testing. Add a separate live capture mode alongside scheduled clicks. Android playback capture is UID-scoped and user-consented; host capture uses a foreground service. Keep wire schemas/admission in shared TypeScript, native code owns AudioRecord/AudioTrack and bounded socket transport. First framing uses mono 48 kHz PCM16 in 20 ms base64 messages; optimize only against observed device evidence. This mode does not promise source/receiver alignment. See LIVE-MUSIC.md.
+
+## Native audio migration accepted (2026-10-04)
+
+The user clarified that Synco is a connection/streaming layer and explicitly rejected a music player or local-file library. They selected moving audio delivery fully into native code. Keep RN/TS UI and control/admission; remove per-frame JS/base64 audio on BOTH endpoints. Retain WebSocket, PCM and AudioTrack for the first measured comparison. Shared protocol ownership includes generated native validation/fixtures. See NATIVE-AUDIO-PLAN.md; this is an accepted direction, not implemented functionality. The earlier file-player-first roadmap is superseded. Source-earphone alignment remains unresolved and distinct from receiver synchronization.

@@ -1,19 +1,21 @@
 # Synco delivery plan
 
-Effort ranges are planning estimates for one developer with devices ready, not promised dates.
+Updated 2026-10-04 after the user clarified scope and selected native audio delivery.
+Synco shares an existing music app's output; it does not own music selection or playback controls.
+This supersedes the earlier file-player-first roadmap. Historical versions remain in Git.
 
-| Phase | Work | Exit evidence | Estimate |
-|---|---|---|---|
-| Foundation (this starter) | TS workspaces, app shell, tests, compact context, skills | typecheck/lint/tests; native launch pending | complete after verification |
-| 0: feasibility | Two Android phones, phone-host WS, click track, ping/pong, future start | repeated recordings with measured onset error; engine decision | 2-4 days, native fallback may add 1-2 weeks |
-| 1: useful stream | Host file picker, QR/token join, bounded chunks, decoder, sim-host | one host + multiple guests audibly receive local file; malformed messages rejected | 4-7 days |
-| 2: synchronization | jitter buffer, synchronized pause/start, drift resync, persisted delay, debug metrics | measured alignment near +/-20-40 ms on tested speaker routes; compensation verified | 4-7 days |
-| 3: resilient Android MVP | reconnect, re-clock, catch-up, screen lock, foreground service, interruptions | join/leave/dropout/lock test matrix without breaking other guests | 4-7 days |
-| 4: iOS verification | native engine/network permissions and background behavior | physical iOS and mixed-device matrix | 3-7 days plus discovered native work |
+Detailed steps and exit criteria: [Native audio migration](NATIVE-AUDIO-PLAN.md).
 
-For Phase 0: <=40 ms is a provisional pass; 40-100 ms requires investigation and another run; >100 ms triggers evaluation of native scheduling before feature UI work.
-Measure repeated starts and sustained playback, record distributions and failures; a single good sample does not pass.
-Each phase delivers one vertical slice and refreshes only the touched feature context.
+| Phase | Deliverable | Exit evidence |
+|---|---|---|
+| A: baseline | Stage/queue/underrun telemetry and acoustic measurements | Reproducible current-build results; unknowns explicit |
+| B: contract | Binary framing, negotiation, generated native validation | TS/native interoperability and malformed/unauthorized frame tests |
+| C: native delivery | Native capture, sender, guest WS and output; TS UI/control | No PCM crossing JS; continuous two-phone audio; measured comparison |
+| D: tuning | Buffer/packet/output tuning and hotspot comparison | Lower measured delay without unacceptable dropouts on named routes |
+| E: receiver alignment | Native timeline, drift handling, late joins | One host/two listeners; recorded alignment/drift; slow guest isolation |
+| F: reliable APK | Background listening, reconnect, interruption handling | Device matrix, standalone APK, known limits and handover |
 
-MVP excludes browser guests, mDNS, WebRTC, stream URLs, queue, user-facing seek, continuous rate correction, and automatic Bluetooth latency detection.
-Internal drift correction may require repositioning; that does not add a user-facing seek feature.
+Retain WebSocket, PCM and AudioTrack initially; alternatives need measured justification.
+Acoustic claims require recordings. Source-to-listener and listener-to-listener alignment are separate.
+QR polish, other source apps, iOS, internet streaming, codecs and UDP/WebRTC are follow-up decisions.
+Each phase ends in a tested local commit and compact feature-context update; no push requested.
