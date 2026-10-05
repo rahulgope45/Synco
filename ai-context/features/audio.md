@@ -13,7 +13,7 @@ Keep 48 kHz mono PCM16, 960 samples/20 ms, WebSocket and AudioTrack for comparab
 Native guest reports every 250 frames: received/missing/discarded, queue, overflow drops, written frames and AudioTrack underruns. Host exposes sent/dropped/queued counts. These are software counters, not audible latency or clock alignment.
 
 ## Evidence and risks
-Prior base64 prototype was continuous but delayed on RMX3085 -> V2146; baseline APK preserved. `npm run check` (23 tests) and final offline arm64 debug build passed. RMX3085 sent 100 valid binary packets to a simulated listener, but all were silent with no music playing. Native guest output and acoustic delay remain untested after Wi-Fi failed. Playback failure is surfaced via native event. Background listener closes by design until Phase F.
+Prior base64 prototype was continuous but delayed on RMX3085 -> V2146; baseline APK preserved. `npm run check` (23 tests), debug/release builds and standalone cold launch on RMX3085 passed. ReVanced playing: two release capture runs sent 830 and 853 valid non-silent binary packets to a simulated listener, with fresh epoch, Stop propagation and service teardown verified. Native guest output/acoustic delay remain untested. Playback failure is surfaced via native event; background listener closes until Phase F.
 
 ## Next action
 Run matching APKs on two phones; compare acoustic delay/dropouts with baseline over speakers and then earphones. Tune startup and queue targets only with measured underruns/latency. No guarantee for official YT Music or Spotify.

@@ -7,8 +7,15 @@ const serial = process.argv[2];
 if (!serial) throw new Error('Usage: node --experimental-strip-types tools/device-smoke/phone-host.ts ADB_SERIAL');
 const adb = (...args: string[]) => execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' });
 function dump(): string {
-  adb('shell', 'uiautomator', 'dump', '/sdcard/synco-window.xml');
-  return adb('shell', 'cat', '/sdcard/synco-window.xml');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    adb('shell', 'rm', '-f', '/sdcard/synco-window.xml');
+    try {
+      adb('shell', 'uiautomator', 'dump', '/sdcard/synco-window.xml');
+      const xml = adb('shell', 'cat', '/sdcard/synco-window.xml');
+      if (xml.includes('<hierarchy')) return xml;
+    } catch { /* Android UI may be transitioning; retry. */ }
+  }
+  throw new Error('Could not read the Synco screen');
 }
 // Read the visible session code in memory; never print or persist the token.
 const code = dump().match(/text="(synco:\/\/join\?ip=[^"]+)"/)?.[1]?.replaceAll('&amp;', '&');
@@ -62,7 +69,8 @@ try {
   console.log('PASS: wrong token, unauthenticated probes and malformed data rejected');
   const first = await admitted('Smoke guest 1'); const second = await admitted('Smoke guest 2');
   const firstStart = next(first, 'PLAY_AT'); const secondStart = next(second, 'PLAY_AT');
-  const xml = dump();
+  let xml = dump();
+  for (let attempt = 0; attempt < 3 && !xml.includes('2 joined / 2 clock-ready'); attempt++) xml = dump();
   assert.ok(xml.includes('2 joined / 2 clock-ready'));
   const button = xml.match(/<node[^>]*content-desc="Play together in 3 seconds"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
   assert.ok(button, 'Group play button must be visible');

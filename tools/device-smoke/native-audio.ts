@@ -6,6 +6,7 @@ import { decodeJoinCode, decodeMessage } from '../../packages/protocol/src/index
 
 const serial = process.argv[2];
 if (!serial) throw new Error('Usage: node --experimental-strip-types tools/device-smoke/native-audio.ts ADB_SERIAL');
+const waitStop = process.argv.includes('--wait-stop');
 const adb = (...args: string[]) => execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' });
 const spec = JSON.parse(readFileSync(new URL('../../packages/protocol/src/audio-wire.json', import.meta.url), 'utf8')) as {
   magic: number; version: number; headerBytes: number; sampleRate: number; channels: number;
@@ -22,10 +23,12 @@ try {
     const client = new WebSocket(`ws://${join.ip}:${join.port}`, { handshakeTimeout: 5000 });
     client.once('open', () => resolve(client)); client.once('error', reject);
   });
-  let welcomed = false; let received = 0; let nonzero = 0; let previous: number | undefined;
+  let welcomed = false; let received = 0; let nonzero = 0;
+  let previous: number | undefined; let epoch: number | undefined; let samplePosition: number | undefined;
   try {
-    const result = await new Promise<{ received: number; nonzero: number }>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timed out waiting for 100 native PCM packets')), 90000);
+    const result = await new Promise<{ received: number; nonzero: number; epoch: number; stopped: boolean }>((resolve, reject) => {
+      let waitingStop = false;
+      let timeout = setTimeout(() => reject(new Error('Timed out waiting for 100 native PCM packets')), 90000);
       socket.on('message', (raw, isBinary) => {
         try {
           if (!isBinary) {
@@ -34,6 +37,9 @@ try {
               assert.equal(message.audioWire, spec.version);
               welcomed = true; socket.send(JSON.stringify({ type: 'READY', v: 1, ready: true }));
               console.log('Ready: start sharing app audio on the host phone');
+            }
+            if (message.type === 'AUDIO_STOP' && waitingStop) {
+              clearTimeout(timeout); resolve({ received, nonzero, epoch: epoch!, stopped: true });
             }
             return;
           }
@@ -51,16 +57,29 @@ try {
           assert.equal(frame.getUint16(24, true), spec.samplesPerFrame);
           assert.equal(frame.getUint16(26, true), spec.pcmBytes);
           assert.equal(frame.getUint32(28, true), 0);
+          const currentEpoch = frame.getUint32(8, true);
+          if (epoch !== undefined) assert.equal(currentEpoch, epoch, 'stream epoch changed mid-run');
+          epoch = currentEpoch;
           const seq = frame.getUint32(12, true);
           if (previous !== undefined) assert.ok(((seq - previous) >>> 0) > 0, 'out-of-order packet');
+          const currentPosition = frame.getUint32(16, true);
+          if (samplePosition !== undefined) assert.ok(((currentPosition - samplePosition) >>> 0) > 0, 'capture position did not advance');
+          samplePosition = currentPosition;
           previous = seq; received++;
           for (let i = spec.headerBytes; i < bytes.length; i++) if (bytes[i] !== 0) nonzero++;
-          if (received === 100) { clearTimeout(timeout); resolve({ received, nonzero }); }
+          if (received === 100) {
+            clearTimeout(timeout);
+            if (waitStop) {
+              waitingStop = true;
+              timeout = setTimeout(() => reject(new Error('Host did not propagate AUDIO_STOP')), 30000);
+              console.log('100 packets validated; tap Stop music sharing on the host');
+            } else resolve({ received, nonzero, epoch: epoch!, stopped: false });
+          }
         } catch (error) { clearTimeout(timeout); reject(error); }
       });
       socket.once('close', () => { clearTimeout(timeout); reject(new Error('Host closed during native audio smoke')); });
       socket.send(JSON.stringify({ type: 'HELLO', v: 1, token: join.token, deviceName: 'Native audio smoke', audioWire: spec.version }));
     });
-    console.log(`PASS: ${result.received} validated binary PCM packets; ${result.nonzero} nonzero payload bytes`);
+    console.log(`PASS: ${result.received} validated binary PCM packets; ${result.nonzero} nonzero payload bytes; epoch ${result.epoch}; stop propagated ${result.stopped}`);
   } finally { socket.close(); }
 } finally { try { adb('shell', 'rm', '-f', xmlPath); } catch { /* device may be offline */ } }

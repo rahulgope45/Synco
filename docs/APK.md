@@ -29,7 +29,7 @@ Baseline APK functionality and limits: `LIVE-MUSIC.md`. The previous ReVanced Mu
 - Size: 36,792,573 bytes. SHA-256: `41ecdc56de726626d97d954933a0c398a2374f3d9992e18690ce5e58b0af2493`.
 - Built offline with `NODE_ENV=production`, `EXPO_OFFLINE=1`, `app:assembleRelease -PreactNativeArchitectures=arm64-v8a --offline`.
 - Contains `assets/index.android.bundle` and ARM64 native libraries; package `com.synco.app`, version `0.1.0`. APK v2 signature verified with the existing development/test key.
-- This exact release APK was **not** installed or cold-launched. Wi-Fi/ADB dropped before device validation. The new native guest playback and audible latency are not yet verified. See `docs/validation/native-audio-2026-10-05.md`.
+- The exact release APK was installed and cold-launched on RMX3085 without Metro or ADB reverse. Non-silent native capture, binary packet delivery to a simulated listener, Stop and stream restart passed. Guest playback and audible latency still need the second phone. See `docs/validation/native-audio-2026-10-05.md`.
 
 ## Verified artifact — 2026-10-04
 

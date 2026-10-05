@@ -13,7 +13,7 @@ Wire v2 capability required on HELLO/WELCOME; old APKs rejected. Fixed 32-byte L
 Host rejects all guest binary input. Native audio readiness is bound to the actual admitted socket and removed on close. Each capture restart gets a new epoch. Host queue holds eight packets; per-guest WebSocket backlog limited to 16 KiB. Controls retain 4096-byte and 30/s limits; max eight sockets.
 
 ## Evidence and risks
-`npm run check` (23 tests) and final offline arm64 debug build pass. RMX3085 control smoke passed with two simulated guests, rejection paths and guest departure. One admitted simulated listener received 100 validated native binary packets. Both phones had a prior matching debug build, but Wi-Fi failed before two-phone output validation. No acoustic comparison yet. WebSocket remains unencrypted; no automatic reconnect/background listener service.
+`npm run check` (23 tests) and final offline arm64 debug/release builds pass. Standalone RMX3085 release control smoke passed with two simulated guests, rejection paths and guest departure. A simulated listener received valid non-silent native binary packets over two capture runs; Stop and epoch reset passed. Physical guest output/acoustic comparison pending. WebSocket remains unencrypted; no automatic reconnect/background listener service.
 
 ## Next action
 Test actual host+guest stream, binary admission rejection, stop/restart and slow-guest isolation; then measure source-to-listener audible delay. See `docs/validation/native-audio-2026-10-05.md`.
