@@ -3,23 +3,27 @@ package expo.modules.syncohost
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
-import android.util.Base64
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-/** Bounded experimental receiver. Wire contract is AUDIO_PCM in packages/protocol. */
-class LivePcmPlayer {
+/** Bounded native PCM receiver. */
+class LivePcmPlayer(private val onFailure: (String) -> Unit = {}) {
   private val queue = ArrayBlockingQueue<ByteArray>(15)
   @Volatile private var active = false
   private var worker: Thread? = null
   private var track: AudioTrack? = null
-  @Synchronized fun offer(pcm: String) {
-    require(pcm.length == 2560) { "Invalid PCM frame" }
-    val bytes = Base64.decode(pcm, Base64.NO_WRAP)
-    require(bytes.size == 1920) { "Invalid PCM frame size" }
+  private val overflowDrops = AtomicInteger()
+  private val outputUnderruns = AtomicInteger()
+  private val writtenFrames = AtomicInteger()
+  @Synchronized fun offer(bytes: ByteArray) {
+    require(bytes.size == AudioWire.PCM_BYTES) { "Invalid PCM frame size" }
     if (!active) start()
-    if (!queue.offer(bytes)) { queue.clear(); queue.offer(bytes) }
+    if (!queue.offer(bytes)) { queue.clear(); overflowDrops.incrementAndGet(); queue.offer(bytes) }
   }
+  fun queuedFrames(): Int = queue.size
+  fun metrics(): Map<String, Int> = mapOf("queued" to queue.size, "overflowDrops" to overflowDrops.get(),
+    "outputUnderruns" to outputUnderruns.get(), "writtenFrames" to writtenFrames.get())
   private fun start() {
     active = true
     worker = Thread {
@@ -45,11 +49,13 @@ class LivePcmPlayer {
             check(written > 0) { "Audio output failed" }
             offset += written
           }
+          writtenFrames.incrementAndGet()
+          outputUnderruns.set(audio.underrunCount)
         }
       } catch (_: InterruptedException) {
         // Expected during stop.
-      } catch (_: Exception) {
-        // Stop this receiver; the next explicit session can retry.
+      } catch (error: Exception) {
+        onFailure(error.message ?: "Audio output failed")
       } finally {
         active = false
         try { audio?.stop() } catch (_: Exception) {}

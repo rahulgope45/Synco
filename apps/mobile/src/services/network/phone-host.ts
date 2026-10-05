@@ -32,6 +32,7 @@ export class PhoneHost {
       const response = this.admission?.receive(id, decodeMessage(raw));
       if (response === 'close') { await this.module.closeClient(id); return; }
       if (this.admission?.has(id)) { clearTimeout(this.pending.get(id)); this.pending.delete(id); }
+      this.module.setAudioReady(id, this.admission?.readyIds().includes(id) ?? false);
       if (response) await this.module.send(id, JSON.stringify(response));
       this.publish();
     } catch { await this.module.closeClient(id).catch(() => {}); }
@@ -42,9 +43,9 @@ export class PhoneHost {
     const sent = await Promise.allSettled(ready.map(id => this.module.send(id, JSON.stringify(message))));
     if (sent.every(result => result.status === 'rejected')) throw new Error('No guest received the command');
   }
-  broadcastLive(message: Extract<Message, { type: 'AUDIO_PCM' }>): void {
-    this.module.sendLive(this.admission?.readyIds() ?? [], JSON.stringify(message));
-  }
+  beginMusicStream(): void { this.module.beginAudioStream(); }
+  endMusicStream(): void { this.module.endAudioStream(); }
+  audioMetrics(): { sent: number; dropped: number; queued: number } { return this.module.audioMetrics(); }
   async stop(): Promise<void> {
     this.subscriptions.forEach(subscription => subscription.remove()); this.subscriptions = [];
     this.pending.forEach(timer => clearTimeout(timer)); this.pending.clear(); this.admission = undefined;

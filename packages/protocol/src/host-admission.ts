@@ -11,7 +11,7 @@ export class HostAdmission {
     if (message.type === 'HELLO') {
       if (this.guests.has(id) || this.guests.size >= 8 || message.token !== this.token) return 'close';
       this.guests.set(id, { name: message.deviceName, ready: false });
-      return { type: 'WELCOME', v: 1, sessionId: this.sessionId, hostTime: this.now(), trackMeta: { title: 'Synco click track', durationMs: 8000 } };
+      return { type: 'WELCOME', v: 1, sessionId: this.sessionId, hostTime: this.now(), audioWire: 2, trackMeta: { title: 'Synco click track', durationMs: 8000 } };
     }
     if (!this.guests.has(id)) return 'close';
     if (message.type === 'PING') {

@@ -1,30 +1,19 @@
 # Network
 
-Updated: 2026-10-04
+Updated: 2026-10-05.
 
 ## Status
-Working Android phone-host WS and JS guest client. Native binary migration accepted but not implemented.
+Native binary WebSocket sender/guest receiver implemented; physical two-phone audio validation pending. TS still validates text controls and admits guests. No PCM enters JS for phone streaming.
 
-## Code paths
-apps/mobile/modules/synco-host; apps/mobile/src/services/network/phone-host.ts; websocket-transport.ts; packages/protocol.
+## Paths
+`packages/protocol/src/audio-wire.json`, `audio-wire.ts`, `index.ts`, `host-admission.ts`; `scripts/generate-audio-wire.mjs`; native `AudioWire.kt`, `SyncoHostModule.kt`, `SyncoGuestModule.kt`; TS `phone-host.ts`, `native-guest-transport.ts`, `spike-session.ts`.
 
-## Current decisions
-AUDIO_PCM is 20 ms mono 48 kHz PCM16, base64/JSON under 4 KiB; TS admits guests and validates messages.
-Host native fan-out drops audio above 16 KiB queued; controls reject above 64 KiB. Max eight connections, 30 inbound messages/sec, five-second HELLO timeout. Binary packets currently rejected.
+## Decisions
+Wire v2 capability required on HELLO/WELCOME; old APKs rejected. Fixed 32-byte LE header + 1920-byte PCM16 mono payload (48 kHz, 20 ms). Header carries epoch, sequence and capture sample position (not wall time). TS spec generates Kotlin codec; length/format/version validated natively.
+Host rejects all guest binary input. Native audio readiness is bound to the actual admitted socket and removed on close. Each capture restart gets a new epoch. Host queue holds eight packets; per-guest WebSocket backlog limited to 16 KiB. Controls retain 4096-byte and 30/s limits; max eight sockets.
 
-## Accepted next direction
-Native binary sender AND receiver; keep WS/PCM initially. No per-frame PCM crossing JS.
-Wire contracts remain owned by packages/protocol; generate native codec/validators and shared fixtures.
-Native delivery must be tied to admitted socket and stream epoch, revoked immediately on close/replacement.
-Detailed phases and gates: docs/NATIVE-AUDIO-PLAN.md. No UDP/WebRTC or codec change yet.
-
-## Evidence
-20 automated tests and native build passed before the planning turn. Phone-host/guest and two-phone click smoke passed.
-Live music confirmed continuous but delayed after queue fixes; zero sequence gaps observed for 80 seconds.
-See docs/validation/live-music-2026-10-04.md. No acoustic latency measurement.
-
-## Open risks
-WS unencrypted; no native binary path, streaming reconnect or physical eight-listener validation.
+## Evidence and risks
+`npm run check` (23 tests) and final offline arm64 debug build pass. RMX3085 control smoke passed with two simulated guests, rejection paths and guest departure. One admitted simulated listener received 100 validated native binary packets. Both phones had a prior matching debug build, but Wi-Fi failed before two-phone output validation. No acoustic comparison yet. WebSocket remains unencrypted; no automatic reconnect/background listener service.
 
 ## Next action
-Baseline queue/timing metrics; shared binary protocol/capability contract with malformed/admission tests.
+Test actual host+guest stream, binary admission rejection, stop/restart and slow-guest isolation; then measure source-to-listener audible delay. See `docs/validation/native-audio-2026-10-05.md`.

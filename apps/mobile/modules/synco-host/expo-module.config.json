@@ -1,1 +1,1 @@
-{"platforms":["android"],"android":{"modules":["expo.modules.syncohost.SyncoHostModule","expo.modules.syncohost.CaptureProbeModule"]}}
+{"platforms":["android"],"android":{"modules":["expo.modules.syncohost.SyncoHostModule","expo.modules.syncohost.CaptureProbeModule","expo.modules.syncohost.SyncoGuestModule"]}}

@@ -7,8 +7,9 @@ export const joinPayloadSchema = z.strictObject({
   token: z.string().min(16).max(256), protocolVersion: z.literal(PROTOCOL_VERSION),
 });
 export const messageSchema = z.discriminatedUnion('type', [
-  z.strictObject({ ...base, type: z.literal('HELLO'), token: z.string().min(16).max(256), deviceName: z.string().min(1).max(80) }),
+  z.strictObject({ ...base, type: z.literal('HELLO'), token: z.string().min(16).max(256), deviceName: z.string().min(1).max(80), audioWire: z.literal(2) }),
   z.strictObject({ ...base, type: z.literal('WELCOME'), sessionId: z.string().min(1).max(80), hostTime: time,
+    audioWire: z.literal(2),
     trackMeta: z.strictObject({ title: z.string().max(200), durationMs: time }) }),
   // Phase-0 readiness acknowledgment; not an audio accuracy claim.
   z.strictObject({ ...base, type: z.literal('READY'), ready: z.boolean() }),
@@ -17,10 +18,6 @@ export const messageSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...base, type: z.literal('PLAY_AT'), hostTime: time, positionMs: time }),
   z.strictObject({ ...base, type: z.literal('PAUSE'), hostTime: time }),
   z.strictObject({ ...base, type: z.literal('BYE') }),
-  // Experimental live mode: 20 ms of 48 kHz mono signed PCM16 little-endian.
-  // Exactly 1920 bytes => 2560 base64 characters. No clock alignment claim.
-  z.strictObject({ ...base, type: z.literal('AUDIO_PCM'), seq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
-    pcm: z.string().length(2560).regex(/^[A-Za-z0-9+/]+$/) }),
   z.strictObject({ ...base, type: z.literal('AUDIO_STOP') }),
 ]);
 // Phase-0 subset only. CHUNK / STATE await the streaming framing decision.

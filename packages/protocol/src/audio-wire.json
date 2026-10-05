@@ -1,0 +1,11 @@
+{
+  "magic": 1398362965,
+  "version": 2,
+  "headerBytes": 32,
+  "sampleRate": 48000,
+  "channels": 1,
+  "encoding": 1,
+  "samplesPerFrame": 960,
+  "pcmBytes": 1920,
+  "maxPacketBytes": 1952
+}

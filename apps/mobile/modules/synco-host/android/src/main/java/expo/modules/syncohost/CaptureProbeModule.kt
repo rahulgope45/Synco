@@ -10,11 +10,9 @@ import android.os.*
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlin.math.abs
-import android.util.Base64
 
 // UID-scoped internal audio: a bounded compatibility probe or opt-in live sharing.
 class CaptureProbeModule : Module() {
-  private val receiver = LivePcmPlayer()
   private fun keepScreenAwake() {
     appContext.currentActivity?.let { activity ->
       activity.runOnUiThread { activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
@@ -22,7 +20,7 @@ class CaptureProbeModule : Module() {
   }
   override fun definition() = ModuleDefinition {
     Name("CaptureProbe")
-    Events("onPcm", "onCaptureEnded")
+    Events("onCaptureEnded")
     OnCreate {
       CaptureProbeService.emit = { name, value -> sendEvent(name, value) }
       keepScreenAwake()
@@ -31,12 +29,8 @@ class CaptureProbeModule : Module() {
     OnDestroy {
       CaptureProbeService.emit = null
       appContext.reactContext?.let { it.stopService(Intent(it, CaptureProbeService::class.java)) }
-      receiver.stop()
     }
-    OnActivityEntersBackground { receiver.stop() }
     Function("status") { CaptureProbeService.status }
-    Function("playFrame") { pcm: String -> receiver.offer(pcm) }
-    Function("stopPlayback") { receiver.stop() }
     Function("start") { stream: Boolean ->
       check(Build.VERSION.SDK_INT >= 29) { "Playback capture needs Android 10 or later" }
       val activity = appContext.currentActivity ?: error("Open Synco first")
@@ -63,7 +57,7 @@ class CaptureConsentActivity : Activity() {
   override fun onRequestPermissionsResult(code: Int, permissions: Array<out String>, results: IntArray) {
     super.onRequestPermissionsResult(code, permissions, results)
     if (code == 71 && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) consent()
-    else { CaptureProbeService.fail("Audio permission denied"); finish() }
+    else { CaptureProbeService.fail("Audio permission denied"); CaptureProbeService.emit?.invoke("onCaptureEnded", emptyMap()); finish() }
   }
   private fun consent() {
     val manager = getSystemService(MediaProjectionManager::class.java)
@@ -75,7 +69,7 @@ class CaptureConsentActivity : Activity() {
     super.onActivityResult(request, result, data)
     if (request == 72 && result == RESULT_OK && data != null) {
       startForegroundService(Intent(this, CaptureProbeService::class.java).putExtra("consent", data).putExtra("stream", intent.getBooleanExtra("stream", false)))
-    } else CaptureProbeService.fail("Capture cancelled")
+    } else { CaptureProbeService.fail("Capture cancelled"); CaptureProbeService.emit?.invoke("onCaptureEnded", emptyMap()) }
     finish()
   }
 }
@@ -134,7 +128,7 @@ class CaptureProbeService : Service() {
             if (stream && count == buffer.size) {
               val bytes = java.nio.ByteBuffer.allocate(count * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
               bytes.asShortBuffer().put(buffer)
-              emit?.invoke("onPcm", mapOf("seq" to sequence++, "pcm" to Base64.encodeToString(bytes.array(), Base64.NO_WRAP)))
+              frameSink?.invoke(bytes.array(), sequence++, samples - count)
             }
             status = mapOf("running" to true, "message" to if (nonzero > 0) "Internal music audio detected" else "Waiting for capturable music", "peak" to peak, "samples" to samples)
           }
@@ -157,6 +151,7 @@ class CaptureProbeService : Service() {
   companion object {
     @Volatile var status: Map<String, Any> = mapOf("running" to false, "message" to "Ready to test installed music app", "peak" to 0, "samples" to 0L)
     @Volatile var emit: ((String, Map<String, Any>) -> Unit)? = null
+    @Volatile var frameSink: ((ByteArray, Long, Long) -> Unit)? = null
     fun fail(message: String) { status = mapOf("running" to false, "message" to message, "peak" to 0, "samples" to 0L) }
   }
 }

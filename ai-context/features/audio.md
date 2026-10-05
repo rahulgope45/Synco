@@ -1,34 +1,19 @@
 # Audio
 
-Updated: 2026-10-04
+Updated: 2026-10-05.
 
 ## Status
-UID-filtered Android app playback capture and native AudioTrack receiver work through a JS/base64 transport.
-Native audio delivery accepted; not implemented. Synco remains an audio-sharing layer, not a music player.
+Native AudioRecord playback capture sends fixed PCM packets directly to native host network queue. Native guest validates binary frames and feeds AudioTrack. Per-frame base64/JS traffic removed. Physical end-to-end listening still pending.
 
-## Code paths
-apps/mobile/modules/synco-host/android/src/main/java/expo/modules/syncohost/CaptureProbeModule.kt and LivePcmPlayer.kt.
-apps/mobile/src/services/audio/capture-probe.ts; services/sync/spike-session.ts; click-engine.ts diagnostic.
+## Paths
+`apps/mobile/modules/synco-host/android/src/main/java/expo/modules/syncohost/`: `CaptureProbeModule.kt`, `LivePcmPlayer.kt`, `SyncoHostModule.kt`, `SyncoGuestModule.kt`, generated `AudioWire.kt`. TS `capture-probe.ts` and `spike-session.ts` own consent/commands only.
 
-## Current decisions
-48 kHz mono PCM16, 20 ms frames. Receiver waits for five frames (100 ms); queue holds at most 15 (300 ms).
-AudioTrack capacity >=100 ms; AudioRecord capacity >=200 ms. Capacity is not measured latency.
-Keep capture consent, UID filter, foreground notification, Stop/revocation and bounded queues.
-Source fixed to installed ReVanced Music; no source-player controls, file library or local-file playback roadmap.
+## Decisions
+Keep 48 kHz mono PCM16, 960 samples/20 ms, WebSocket and AudioTrack for comparable A/B test. Receiver still waits for five frames (100 ms), with 15-frame queue (300 ms capacity). Capture UID remains `app.revanced.android.apps.youtube.music`; source app controls itself. Consent, foreground notification and Stop retained.
+Native guest reports every 250 frames: received/missing/discarded, queue, overflow drops, written frames and AudioTrack underruns. Host exposes sent/dropped/queued counts. These are software counters, not audible latency or clock alignment.
 
-## Accepted next direction
-Capture -> native binary WS -> native receiver/output; TS owns UI/session controls only.
-Keep format, WS and AudioTrack unchanged for first A/B test; tune buffers after isolating migration effects.
-Oboe/AAudio is a conditional later experiment. See docs/NATIVE-AUDIO-PLAN.md.
-
-## Evidence
-ReVanced Music 8.10.52 capture verified on RMX3085; user confirmed continuous but delayed playback on V2146.
-Zero sequence gaps over 80 seconds; stop propagated; shared-click regression passed. Twenty automated tests passed.
-See docs/validation/live-music-2026-10-04.md and docs/APK.md for existing artifact evidence.
-
-## Open risks
-No acoustic latency distribution, Bluetooth route measurement or native binary delivery yet.
-Capture does not control source-app output timing; no host-earphone sync guarantee. Official YT Music/Spotify unverified.
+## Evidence and risks
+Prior base64 prototype was continuous but delayed on RMX3085 -> V2146; baseline APK preserved. `npm run check` (23 tests) and final offline arm64 debug build passed. RMX3085 sent 100 valid binary packets to a simulated listener, but all were silent with no music playing. Native guest output and acoustic delay remain untested after Wi-Fi failed. Playback failure is surfaced via native event. Background listener closes by design until Phase F.
 
 ## Next action
-Add aggregate stage/queue/underrun telemetry, record baseline, then migrate both ends under shared binary contract.
+Run matching APKs on two phones; compare acoustic delay/dropouts with baseline over speakers and then earphones. Tune startup and queue targets only with measured underruns/latency. No guarantee for official YT Music or Spotify.

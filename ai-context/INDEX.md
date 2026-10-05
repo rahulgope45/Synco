@@ -2,7 +2,7 @@
 
 Product: share an existing music app's audio across phones on Wi-Fi/hotspot. Connection/streaming only; no player, library or source-app playback controls.
 Stack: React Native + TypeScript; Expo development builds; Zustand; Zod; Jest.
-Current stage: continuous but delayed live prototype works. Native binary audio migration selected; phased plan written, implementation pending.
+Current stage: native binary audio path implemented and built; two-phone stream and acoustic latency validation pending.
 
 | Feature | Context | Code |
 |---|---|---|
@@ -19,4 +19,4 @@ Resume: [HANDOFF](HANDOFF.md). Delivery gates: [roadmap](../docs/ROADMAP.md).
 Architecture decisions: [decisions](../docs/DECISIONS.md).
 Historical plan: [handover](../docs/reference/synco-handover.md), reference only.
 
-Accepted migration: [native audio plan](../docs/NATIVE-AUDIO-PLAN.md). Start with baseline telemetry and shared binary contract.
+Accepted migration: [native audio plan](../docs/NATIVE-AUDIO-PLAN.md). Current validation record: [native audio](../docs/validation/native-audio-2026-10-05.md).

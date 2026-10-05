@@ -44,7 +44,7 @@ async function rejected(raw: string): Promise<void> {
 }
 async function admitted(name: string): Promise<WebSocket> {
   const socket = await open(); const welcomed = next(socket, 'WELCOME');
-  socket.send(JSON.stringify({ type: 'HELLO', v: 1, token: join.token, deviceName: name }));
+  socket.send(JSON.stringify({ type: 'HELLO', v: 1, token: join.token, deviceName: name, audioWire: 2 }));
   assert.equal((await welcomed).type, 'WELCOME');
   for (let i = 0; i < 3; i++) {
     const t0 = performance.now(); const response = next(socket, 'PONG');
@@ -56,7 +56,7 @@ async function admitted(name: string): Promise<WebSocket> {
   return socket;
 }
 try {
-  await rejected(JSON.stringify({ type: 'HELLO', v: 1, token: 'wrong-token-000000', deviceName: 'Denied' }));
+  await rejected(JSON.stringify({ type: 'HELLO', v: 1, token: 'wrong-token-000000', deviceName: 'Denied', audioWire: 2 }));
   await rejected(JSON.stringify({ type: 'PING', v: 1, t0: 1 }));
   await rejected('invalid json');
   console.log('PASS: wrong token, unauthenticated probes and malformed data rejected');

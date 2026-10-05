@@ -1,6 +1,6 @@
 # Native audio delivery plan
 
-Updated: 2026-10-04. Direction accepted by user; implementation has not started.
+Updated: 2026-10-05. Phases A/B and the initial native path of C are implemented; physical comparison and later phases remain open. See `docs/validation/native-audio-2026-10-05.md`.
 
 ## Scope and success
 

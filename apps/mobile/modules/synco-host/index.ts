@@ -12,7 +12,10 @@ type HostModule = {
   sessionToken(): string;
   start(ip: string, port: number): Promise<void>;
   send(id: string, text: string): Promise<void>;
-  sendLive(ids: string[], text: string): void;
+  setAudioReady(id: string, ready: boolean): void;
+  beginAudioStream(): void;
+  endAudioStream(): void;
+  audioMetrics(): { sent: number; dropped: number; queued: number };
   closeClient(id: string): Promise<void>;
   stop(): Promise<void>;
 };

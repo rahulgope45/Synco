@@ -14,6 +14,7 @@ import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -22,6 +23,14 @@ import java.util.concurrent.atomic.AtomicReference
 class SyncoHostModule : Module() {
   private var server: WebSocketServer? = null
   private val clients = ConcurrentHashMap<String, WebSocket>()
+  private val readyClients = ConcurrentHashMap<String, WebSocket>()
+  private val audioQueue = ArrayBlockingQueue<ByteBuffer>(8)
+  @Volatile private var audioActive = false
+  @Volatile private var streaming = false
+  private var audioWorker: Thread? = null
+  private val audioEpoch = AtomicInteger()
+  private val audioSent = AtomicInteger()
+  private val audioDropped = AtomicInteger()
   private val ids = AtomicInteger()
 
   override fun definition() = ModuleDefinition {
@@ -41,17 +50,13 @@ class SyncoHostModule : Module() {
       client.send(text)
     }
     AsyncFunction("closeClient") { id: String -> clients[id]?.close(1008, "Session rejected or ended") }
-    // IDs are selected by the TS admission policy. A slow listener drops a frame;
-    // it must not disconnect all live listeners or grow an unbounded send queue.
-    Function("sendLive") { readyIds: List<String>, text: String ->
-      require(text.toByteArray(Charsets.UTF_8).size <= 4096)
-      readyIds.forEach { id ->
-        val client = clients[id]
-        if (client != null && client.isOpen && pendingBytes(client) < 16384) {
-          try { client.send(text) } catch (_: Exception) { client.close() }
-        }
-      }
+    Function("setAudioReady") { id: String, ready: Boolean ->
+      val client = clients[id]
+      if (ready && client != null && client.isOpen) readyClients[id] = client else readyClients.remove(id)
     }
+    Function("beginAudioStream") { streaming = false; audioQueue.clear(); audioEpoch.set(SecureRandom().nextInt().ushr(1)); streaming = true }
+    Function("endAudioStream") { streaming = false; audioQueue.clear() }
+    Function("audioMetrics") { mapOf("sent" to audioSent.get(), "dropped" to audioDropped.get(), "queued" to audioQueue.size) }
     AsyncFunction("stop") { stopHost() }
     OnActivityEntersBackground { if (CaptureProbeService.status["running"] != true) stopHost() }
     OnDestroy { stopHost() }
@@ -59,6 +64,35 @@ class SyncoHostModule : Module() {
 
   private fun pendingBytes(client: WebSocket): Int =
     (client as? WebSocketImpl)?.outQueue?.sumOf { it.remaining() } ?: 65537
+
+  private fun offerAudio(pcm: ByteArray, sequence: Long, samplePosition: Long) {
+    if (!audioActive || !streaming) return
+    val packet = AudioWire.encode(audioEpoch.get().toLong() and 0xffffffffL,
+      sequence and 0xffffffffL, samplePosition and 0xffffffffL, pcm)
+    if (!audioQueue.offer(packet)) { audioQueue.poll(); audioDropped.incrementAndGet(); audioQueue.offer(packet) }
+  }
+
+  private fun startAudioWorker() {
+    audioSent.set(0); audioDropped.set(0); audioQueue.clear(); streaming = false; audioActive = true
+    CaptureProbeService.frameSink = ::offerAudio
+    audioWorker = Thread {
+      while (audioActive) {
+        val packet = try { audioQueue.poll(200, TimeUnit.MILLISECONDS) } catch (_: InterruptedException) { null } ?: continue
+        if (!streaming || packet.getInt(8) != audioEpoch.get()) continue
+        readyClients.forEach { (id, client) ->
+          if (clients[id] !== client || !client.isOpen) { readyClients.remove(id, client); return@forEach }
+          if (pendingBytes(client) >= 16384) { audioDropped.incrementAndGet(); return@forEach }
+          try { client.send(packet.duplicate()); audioSent.incrementAndGet() }
+          catch (_: Exception) { readyClients.remove(id, client); client.close() }
+        }
+      }
+    }.also { it.name = "SyncoAudioNetwork"; it.start() }
+  }
+
+  private fun stopAudioWorker() {
+    CaptureProbeService.frameSink = null; streaming = false; audioActive = false
+    audioWorker?.interrupt(); audioWorker?.join(1000); audioWorker = null; audioQueue.clear(); readyClients.clear()
+  }
 
   private fun localAddresses(): List<String> = NetworkInterface.getNetworkInterfaces().toList()
     .filter { it.isUp && !it.isLoopback }
@@ -98,6 +132,7 @@ class SyncoHostModule : Module() {
       override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
         rates.remove(conn)
         val id = clients.entries.firstOrNull { it.value === conn }?.key ?: return
+        readyClients.remove(id, conn)
         clients.remove(id)
         sendEvent("onClose", mapOf("id" to id))
       }
@@ -116,10 +151,12 @@ class SyncoHostModule : Module() {
       host.start()
       check(ready.await(5, TimeUnit.SECONDS)) { "Host startup timed out" }
       failure.get()?.let { throw it }
+      startAudioWorker()
     } catch (error: Exception) { stopHost(); throw error }
   }
 
   @Synchronized private fun stopHost() {
+    stopAudioWorker()
     val host = server ?: return
     server = null
     host.stop(1000)
