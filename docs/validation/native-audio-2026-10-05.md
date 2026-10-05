@@ -9,6 +9,7 @@ Implementation date: 2026-10-05. This is a test record, not a measured improveme
 - RMX3085 host control smoke passed: wrong token, unauthenticated probe and malformed text rejected; two simulated guests became ready, received identical `PLAY_AT`, and one departure did not interrupt the other.
 - RMX3085 native audio smoke passed: one simulated admitted listener received 100 valid binary PCM packets (1952 bytes each). All 100 payloads were silent because the music source was not playing. This verifies host capture-to-native-socket framing, not guest AudioTrack or audible delay.
 - Prior base64 APK remains at ignored `dist/synco-0.1.0-arm64-test.apk` for comparison.
+- Standalone native release APK built offline at ignored `dist/synco-0.1.0-native-arm64-test.apk`; bundled JS, ARM64 ABI, package and v2 signature verified. SHA-256: `41ecdc56de726626d97d954933a0c398a2374f3d9992e18690ce5e58b0af2493`. Exact APK cold launch is pending.
 
 ## Physical test matrix — pending
 | Run | Build | Host/source | Listener/route | Network | Onset p50/p95/max | Dropouts | Notes |

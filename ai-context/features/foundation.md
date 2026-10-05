@@ -1,27 +1,19 @@
 # Foundation
 
-Updated: 2026-10-04
+Updated: 2026-10-05.
 
 ## Status
-Starter and standalone ARM64 test APK built; automated checks passed.
+React Native/strict TS Android project. Native binary-audio standalone ARM64 test APK built offline; exact release artifact has not been device-launched.
 
-## Code paths
-apps/mobile; package.json; eslint.config.mjs; skills/
+## Paths
+`apps/mobile`, root `package.json`, `docs/APK.md`, `dist/` (ignored artifacts), `skills/`.
 
 ## Decisions
-Expo development build; npm workspaces; strict TS; original repo-local skills.
+Expo development builds for iteration; npm workspaces; test-key signed release APK for sideload testing. No public signing or store release yet. Original repo-local skills and compact feature context remain in use.
 
 ## Evidence
-Standalone release variant (test-key signed) built and cold-launched on V2146 without Metro forwarding. Embedded bundle and APK signature verified. npm run check: 20 tests, typecheck and lint passed. See docs/APK.md.
-2026-10-04: npm run check passed (typecheck, ESLint, 12 Jest tests).
-Android Hermes bundle exported successfully (585 modules).
-All four skills passed quick_validate.py and were installed to .agents/skills.
-Native build and physical launch now passed; local clicks confirmed audible by user.
-Two-device audible synchronization remains unmeasured.
-npm audit: 23 findings (7 moderate, 16 high); see docs/validation/npm-audit-2026-10-04.json.
+`npm run check` passes: typecheck, lint, wire-generation check, 23 Jest tests. Final arm64 debug and release builds pass offline. Native release APK at `dist/synco-0.1.0-native-arm64-test.apk` contains JS bundle and ARM64 native libraries; package identity, v2 signature and SHA-256 verified in `docs/APK.md`.
+Prior base64 APK at `dist/synco-0.1.0-arm64-test.apk` was cold-launched on V2146 without Metro on 2026-10-04. Current native release APK cold launch and two-phone audio remain pending after Wi-Fi failure.
 
-## Open risks
-See docs/validation/device-smoke-2026-10-04.md for physical verification.
-
-## Next action
-Continue live-audio latency work; production signing and dependency review remain before public release.
+## Risks and next action
+Install the native standalone APK on both phones when ADB/Wi-Fi returns. Validate cold launch, audio capture/receiver and acoustic delay; keep the base64 APK as comparison. Production signing and dependency review remain before public release. See `docs/validation/native-audio-2026-10-05.md`.

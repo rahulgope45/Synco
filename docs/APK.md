@@ -21,7 +21,15 @@ Delivery copy: `dist/synco-0.1.0-arm64-test.apk`. Build artifacts stay outside G
 
 `apps/mobile/plugins/with-lan-network.js` persists the cleartext-network setting required for the current local `ws://` transport across prebuilds. Join codes still validate private LAN IP addresses. A token controls admission; the audio connection is not encrypted.
 
-Current functionality and limits: `LIVE-MUSIC.md`. Live ReVanced Music sharing remains delayed and is not synchronized with source playback. The Android APK supports guest use without the source music app installed; capture is available only on Android 10+ with the selected source app installed.
+Baseline APK functionality and limits: `LIVE-MUSIC.md`. The previous ReVanced Music stream was delayed and not synchronized with source playback. Guest use does not need the source music app installed; host capture needs Android 10+ and the selected source app.
+
+## Native binary audio test artifact — 2026-10-05
+
+- File: `dist/synco-0.1.0-native-arm64-test.apk` (kept separate from the base64 baseline below).
+- Size: 36,792,573 bytes. SHA-256: `41ecdc56de726626d97d954933a0c398a2374f3d9992e18690ce5e58b0af2493`.
+- Built offline with `NODE_ENV=production`, `EXPO_OFFLINE=1`, `app:assembleRelease -PreactNativeArchitectures=arm64-v8a --offline`.
+- Contains `assets/index.android.bundle` and ARM64 native libraries; package `com.synco.app`, version `0.1.0`. APK v2 signature verified with the existing development/test key.
+- This exact release APK was **not** installed or cold-launched. Wi-Fi/ADB dropped before device validation. The new native guest playback and audible latency are not yet verified. See `docs/validation/native-audio-2026-10-05.md`.
 
 ## Verified artifact — 2026-10-04
 
