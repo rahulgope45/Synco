@@ -20,3 +20,5 @@ Architecture decisions: [decisions](../docs/DECISIONS.md).
 Historical plan: [handover](../docs/reference/synco-handover.md), reference only.
 
 Accepted migration: [native audio plan](../docs/NATIVE-AUDIO-PLAN.md). Current validation record: [native audio](../docs/validation/native-audio-2026-10-05.md).
+
+Learning/reference: [eight-part interview study pack](../docs/interview/README.md), snapshot 2026-10-05; includes architecture, deep Q&A, startup, resume wording and independent rebuild exercises.

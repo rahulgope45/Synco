@@ -19,5 +19,7 @@ Native: `apps/mobile/modules/synco-host/android/src/main/java/expo/modules/synco
 `npm run check` passed (23 tests, typecheck, lint, wire check); arm64 debug/release builds passed. Exact standalone release APK installed and cold-launched on RMX3085 without Metro. With ReVanced playing, native binary packets had nonzero audio; two capture runs used distinct epochs and propagated Stop, with capture service stopped. Release control smoke passed with two simulated guests. No physical guest output or latency measurement yet. See validation record.
 Release APK path/checksum: `docs/APK.md`. The earlier stuck capture service was found on ADB reconnection and force-stopped before release testing; current Synco host session was ended cleanly.
 
+Learning material: `docs/interview/README.md` routes eight separate interview notes (2026-10-05 snapshot). These distinguish host evidence from pending physical guest/latency tests; update claims after future validation.
+
 ## Limits
 Receiver starts after five 20 ms frames and keeps a 15-frame bounded queue; this has not been tuned. Counters are not acoustic latency. Output routes/Bluetooth add independent delay. Host source playback cannot be delayed by Synco. Guest stops in background; reconnect is not yet automatic. Legacy standalone APK remains in ignored `dist/` as baseline.
